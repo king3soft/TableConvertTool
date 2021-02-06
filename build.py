@@ -21,7 +21,7 @@ with open(os.path.join("miniperf", "__init__.py"), encoding="utf8") as f:
     tag = os.getenv('tag')
     if tag and tag.startswith("refs/tags/v"):
         version = tag.replace("refs/tags/v", "")
-    else:    
+    else:
         # add version
         x_y_z = [int(x) for x in version.split('.')]
         x_y_z[-1] += 1
@@ -29,7 +29,7 @@ with open(os.path.join("miniperf", "__init__.py"), encoding="utf8") as f:
 
 with open(os.path.join("miniperf", "__init__.py"), 'w', encoding="utf8") as f:
     f.write(f'__version__ = "{version}"')
-    
+
 
 tasks = {}
 def task(name, depends):
@@ -67,7 +67,7 @@ def get_release_file_name(ctx):
 
 def build_ui(ctx):
     print("Task: Build UI")
-    pass # TODO: cd miniperf/ui; yarn package
+    # pass # TODO: cd miniperf/ui; yarn package
     print("Task: Build UI done")
 
 
@@ -248,7 +248,7 @@ def build_debug():
     print("Building...")
     clean()
     build_ui(ctx)
-    build_wheel(ctx)
+    # build_wheel(ctx)
     build_nsis(ctx)
     build_package(ctx)
     print("Build Success.")
@@ -287,4 +287,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()    
+    main()
