@@ -1,0 +1,12 @@
+PyQt5==5.12
+PyQt5-sip==4.19.19
+PyQtWebEngine==5.12
+openpyxl==3.0.2
+jdcal==1.4.1
+et-xmlfile==1.0.1
+wcwidth
+-e git+https://github.com/sandin/mmgui.git#egg=mmgui
+-e .
+
+
+
