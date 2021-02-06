@@ -73,7 +73,8 @@ def build_ui(ctx):
 
 def build_wheel(ctx):
     print("Task: Build Wheel")
-    subprocess.check_call(['python', 'setup.py', 'bdist', 'bdist_wheel'])
+    os.makedirs('dist')
+    # subprocess.check_call(['python', 'setup.py', 'bdist', 'bdist_wheel'])
     print("Task: Build Wheel done")
 
 
@@ -248,7 +249,7 @@ def build_debug():
     print("Building...")
     clean()
     build_ui(ctx)
-    # build_wheel(ctx)
+    build_wheel(ctx)
     build_nsis(ctx)
     build_package(ctx)
     print("Build Success.")
