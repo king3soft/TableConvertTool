@@ -148,7 +148,7 @@ def zip_dir(dir_name, output_file, excludes = None):
                         continue
             if include:
                 zip_file.write(file_full_path, file_rel_path)
-                print("package file %s" % file_rel_path)
+                # print("package file %s" % file_rel_path)
     zip_file.close()
 
 
@@ -250,7 +250,7 @@ def build_debug():
     build_ui(ctx)
     build_wheel(ctx)
     build_nsis(ctx)
-    # build_package(ctx)
+    build_package(ctx)
     print("Build Success.")
     return True
 
