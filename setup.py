@@ -2,7 +2,7 @@
 import os, re
 from setuptools import setup, find_namespace_packages
 
-with open(os.path.join("TablConvertTool", "__init__.py"), encoding="utf8") as f:
+with open(os.path.join("miniperf", "__init__.py"), encoding="utf8") as f:
     version = re.search(r'__version__ = "(.*?)"', f.read()).group(1)
 
 setup(
