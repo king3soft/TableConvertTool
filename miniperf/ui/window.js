@@ -4,6 +4,8 @@ import { FcOpenedFolder } from 'react-icons/fc';
 import { IconContext, DiJoomla } from 'react-icons';
 import { Button, ButtonGroup, Form, Table, Navbar, Nav, FormControl, NavDropdown, OverlayTrigger, Tooltip, Modal, Row, Col } from 'react-bootstrap'
 
+const Tag = "window.js"
+
 class Window extends React.Component {
 
     constructor(props) {
@@ -25,6 +27,9 @@ class Window extends React.Component {
         this.selectApp = this.selectApp.bind(this)
         this.onPlayClick = this.onPlayClick.bind(this)
         this.onMessage = this.onMessage.bind(this)
+        // 拖拽
+        this.ref_app = React.createRef()
+        this._onFilesDrop = this._onFilesDrop.bind(this);
     }
     on_GetFileList() {
         RPC.invoke("rpc_GetFileList", {}).then(response => {
@@ -71,13 +76,15 @@ class Window extends React.Component {
     }
 
     componentDidMount() {
-        window.addEventListener("message", this.onMessage);
+        window.addEventListener("message", this.onMessage);        
+        this.ref_app.current.addEventListener("qtDrop", this._onFilesDrop);
         this.on_GetFileList()
         // this.on_GetSettigPath()
     }
 
     componentWillUnmount() {
         window.removeEventListener("message", this.onMessage);
+        this.ref_app.current.removeEventListener("qtDrop", this._onFilesDrop);
     }
 
     onChangeSettingDialog(isShow) {
@@ -285,6 +292,13 @@ class Window extends React.Component {
             }
         })
     }
+
+    _onFilesDrop(ev) {
+        console.log(Tag, 'On Multiple Symbol Files Drop', ev, ev.data);
+        ev.preventDefault();
+        ev.stopPropagation();
+    }
+
     render() {
 
         const renderTooltip = (props) => (
@@ -299,7 +313,7 @@ class Window extends React.Component {
         })
 
         return (
-            <div>
+            <div ref={this.ref_app}>
                 <Navbar bg="primary" variant="dark">
                     <Navbar.Brand href="#home">
                         <IconContext.Provider value={{ size: "2em" }}>
