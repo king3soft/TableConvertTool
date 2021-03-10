@@ -138,11 +138,13 @@ def gen_cscode(xlsxpath:str):
         template_filed = "\t\tpublic __FILED__ { get; private set; } // __COMMENT__\n"
         for i in range(0, len(comments)):
             header = Header(
-                _comment=ws[3][i].value,
+                _comment=ws[4][i].value,
                 _tags=ws[2][i].value,
-                _filed=ws[4][i].value,
+                _filed=ws[5][i].value,
                 _type=ws[1][i].value,
             )
+            if header.Filed == 'None':
+                continue
             line = template_filed.replace("__FILED__", f"{header.FiledType} {header.Filed}")
             line = line.replace("__COMMENT__", f"{header.Comment}")
             fileds.append(line)
@@ -152,15 +154,16 @@ def gen_cscode(xlsxpath:str):
         template_filed = '\t\t\t__FILED__ = Get___TYPE__(cellStrs[__INDEX__], "");\n'
         for i in range(0, len(comments)):
             header = Header(
-                _comment=ws[3][i].value,
+                _comment=ws[4][i].value,
                 _tags=ws[2][i].value,
-                _filed=ws[4][i].value,
+                _filed=ws[5][i].value,
                 _type=ws[1][i].value,
             )
             header_list.append(header)
             if not header.Filed:
                 return {"ok": False, "msg": f"[2]{i} is None"}
-
+            if header.Filed == 'None':
+                continue
             line = template_filed.replace("__FILED__", header.Filed)
             line = line.replace("__TYPE__", header.FiledType)
             line = line.replace("__INDEX__", f"{i}")
@@ -283,9 +286,9 @@ def gen_tabfile(dat: dict):
         tab_headers = []
         for i in range(0, len(ws[1])):
             header = Header(
-                _comment=ws[3][i].value,
+                _comment=ws[4][i].value,
                 _tags=ws[2][i].value,
-                _filed=ws[4][i].value,
+                _filed=ws[5][i].value,
                 _type=ws[1][i].value,
             )
             tab_headers.append(header)
@@ -300,7 +303,16 @@ def gen_tabfile(dat: dict):
         with open(tab_fullpath, "w", encoding="utf-8", newline="") as f:
             c = csv.writer(f)
             i = 0
-            irows = ws.iter_rows(min_row=3)
+
+
+            # 获取有效列,第5行中有列为空代表此列为注释列
+            valid_cols_indexs = []
+            for i, v in enumerate(ws[5]):
+                if v.value != None:
+                    valid_cols_indexs.append(i)            
+
+            # 从第4行开始遍历
+            irows = ws.iter_rows(min_row=4)
             for r in irows:
                 cols = [f"{cell.value}" for cell in r]
                 for j in range(len(cols)):
@@ -322,9 +334,10 @@ def gen_tabfile(dat: dict):
                 #     # if i != ws.max_row:
                 #         # line += '\n'
                 #     # f.write(line.encode("utf-8"))
-                c.writerow(cols)
-        return {"ok": True, "dat": f"【Succeed】生成成功\n{tab_fullpath}"}
+                valid_cols = [cols[i] for i in valid_cols_indexs]
 
+                c.writerow(valid_cols)
+        return {"ok": True, "dat": f"【Succeed】生成成功\n{tab_fullpath}"}        
     except Exception as err:
         print("Exception", err)
         traceback.print_exc()

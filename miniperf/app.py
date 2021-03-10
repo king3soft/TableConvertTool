@@ -98,7 +98,7 @@ def on_create(ctx):
         "title": app_name,
         "width": 1200,
         "height": 800,
-        "dev_mode": False,
+        "dev_mode": True,
         #"frameless": True,
         "menu": menu
     })

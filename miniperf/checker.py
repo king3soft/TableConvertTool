@@ -6,7 +6,10 @@ from openpyxl.utils.cell import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
 
 def empty_check(ws):
-    for row in ws.rows:
+
+    for i, row in enumerate(ws.rows):        
+        if i == 2:
+            continue
         line = [f'{e.value}' for e in row]
         if len(set(line)) == 1 and line[1] == 'None':
             return (False, "【FAILED】XLSX 有空行")
