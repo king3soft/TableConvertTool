@@ -626,3 +626,13 @@ def rpc_ConvertAllFilesClick(dat):
         print("Exception", err)
         traceback.print_exc()
         return {"ok": False, "msg": f"ERROR: {err}\n{traceback.format_exc()}"}
+
+def rpc_HelpButtonClick(dat):
+    try:
+        p = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ui", "help.html")
+        os.startfile(p)
+        return {"ok": True, "dat": f"【Succeed】转表成功"}
+    except Exception as err:
+        print("Exception", err)
+        traceback.print_exc()
+        return {"ok": False, "msg": f"ERROR: {err}\n{traceback.format_exc()}"}

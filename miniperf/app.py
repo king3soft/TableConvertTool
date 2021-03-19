@@ -132,7 +132,7 @@ def on_create(ctx):
     win.webview.bind_function("rpc_CommitAllFilesClick", lambda dat: extension.rpc_CommitAllFilesClick(dat))
     # rpc_ConvertAllFilesClick
     win.webview.bind_function("rpc_ConvertAllFilesClick", lambda dat: extension.rpc_ConvertAllFilesClick(dat))
-
+    win.webview.bind_function("rpc_HelpButtonClick", lambda dat: extension.rpc_HelpButtonClick(dat))
 
 
 

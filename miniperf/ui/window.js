@@ -283,6 +283,17 @@ class Window extends React.Component {
             }
         })
     }
+
+    on_HelpButtonClick() {
+        RPC.invoke("rpc_HelpButtonClick", { dat: '' }).then(response => {
+            if (response.ok) {
+                // alert(response.dat)
+            } else {
+                alert(response.msg)
+            }
+        })
+    }
+
     on_ConvertAllFilesClick() {
         RPC.invoke("rpc_ConvertAllFilesClick", { dat: '' }).then(response => {
             if (response.ok) {
@@ -334,6 +345,7 @@ class Window extends React.Component {
                     <Button variant="primary" onClick={() => this.on_GetFileList()} >刷新</Button>
                     <Button variant="primary" onClick={() => this.on_ConvertAllFilesClick()} >一键转换所有表格</Button>
                     <Button variant="primary" onClick={() => this.on_CommitAllFilesClick()} >提交所有修改记录</Button>
+                    <Button variant="primary" onClick={() => this.on_HelpButtonClick()} >帮助文档</Button>
                 </Navbar>
 
                 <br />
