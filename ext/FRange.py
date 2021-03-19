@@ -1,5 +1,5 @@
 import os
-def check(cols, sarg:str):
+def check(cols, sarg:str,j:int):
     l = len(set(cols))
     r = len(cols)
     if l != r:

@@ -1,7 +1,7 @@
 import os
 import FHelper
 import traceback
-def check(cols, sarg:str):
+def check(cols, sarg:str,j):
     try:
         args = sarg.split(',')
         tab_name = args[0]

@@ -1,6 +1,6 @@
 import os
 
-def check(cols, sarg:str):
+def check(cols, sarg:str,j:int):
     arg1 = sarg.split(',')[0]
     for e in cols:
         if not e.startswith(arg1):

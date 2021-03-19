@@ -4,7 +4,7 @@ import re
 from openpyxl import workbook
 from openpyxl.utils.cell import get_column_letter
 from openpyxl.worksheet.worksheet import Worksheet
-
+from miniperf import utils_str
 def empty_check(ws):
 
     for i, row in enumerate(ws.rows):        
@@ -13,11 +13,11 @@ def empty_check(ws):
         line = [f'{e.value}' for e in row]
         if len(set(line)) == 1 and line[1] == 'None':
             return (False, "【FAILED】XLSX 有空行")
-
-    for row in ws.columns:
-        line = [f'{e.value}' for e in row]
-        if len(set(line)) == 1 and line[1] == 'None':
-            return (False, "【FAILED】XLSX 有空列")
+    #项目组需求，支持空列        
+    # for row in ws.columns:
+    #     line = [f'{e.value}' for e in row]
+    #     if len(set(line)) == 1 and line[1] == 'None':
+    #         return (False, "【FAILED】XLSX 有空列")
     return (True, "")
 
 def linecount_check(ws:Worksheet):
@@ -31,24 +31,15 @@ def pkey1_check(ws:Worksheet):
         return (False, f"[ERROR2] 配置表需要要有主键PKEY1, 请联系开发人员 {tags}")
     return (True, "")
 
-def tag_parser(tag):
-    tag = tag.replace(' ', '')
-    if '(' not in tag:
-        return (tag, '')
-    else:
-        re_funargs = re.compile('(?P<func>F[a-zA-Z0-9_]+)\((?P<args>[^)]*)\)')
-        m = re.match(re_funargs, tag)
-        return (m['func'], m['args'])
-
+                  
 def tags_check(ws:Worksheet):
     s_cols = [f'{e.value}' for e in ws[2]]
-
     taglist = []
     for i in range(len(s_cols)):
         if s_cols[i] != 'None':
             tag_list = s_cols[i].split('|')
             for tag in tag_list:
-                func, args = tag_parser(tag)
+                func, args = utils_str.tag_parser(tag)
                 taglist.append((i, func, args))
 
     for i, func, args in taglist:
@@ -60,8 +51,8 @@ def tags_check(ws:Worksheet):
                 if module:
                     cletter = get_column_letter(i+1)
                     cols = [f'{e.value}' for e in ws[cletter][4:]]
-                    print(i, func, args, cols)
-                    ok, msg = module.check(cols, args)
+                    # i 代表列
+                    ok, msg = module.check(cols, args,i)
                     if not ok:
                         return (False, f"【ERROR】 {msg}")
     return (True, "【SUCCEED】 标签检查")

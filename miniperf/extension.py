@@ -15,29 +15,19 @@ import re
 import csv
 from miniperf import setting
 from miniperf import checker
+from miniperf import custom_handler
 from openpyxl import load_workbook
-
+from miniperf import functionsEx
+from miniperf import utils_str
 ROOT_DIR = os.path.abspath(os.path.dirname(__file__))
 python_path = os.path.join(os.path.split(sys.executable)[0], "python.exe")
 
 g_webview = None
 
 
-class Header(object):
-    def __init__(self, _comment, _filed, _type, _tags):
-        print("__HEADER__", _comment, _filed, _type, _tags)
-        _map = {"int": "0", "string": ""}
-        self.Comment = f"{_comment}".replace("\r\n", "")
-        self.Filed = f"{_filed}"
-        self.FiledType = f"{_type}"
-        self.Default = _map.get(self.FiledType, "")
-        self.Tags = f"{_tags}"
-
-
 def registered_webview(webview):
     global g_webview
     g_webview = webview
-
 
 def mkdir_if_not_exists(path, *paths):
     dirname = os.path.join(path, *paths)
@@ -45,32 +35,16 @@ def mkdir_if_not_exists(path, *paths):
         os.mkdir(dirname)
     return dirname
 
-
 def external_data_dir():
     return mkdir_if_not_exists(ROOT_DIR, ".data")
-
 
 def post_message_to_js(msg, type):
     global g_webview
     if g_webview:
         g_webview.send_message_to_js({"type": "on_message", "data": {"type": type, "msg": msg}})
 
-
-def get_svn_status(xlsxpath):
-    ret = {}
-    output = subprocess.check_output([get_tpsvn(), "status", xlsxpath]).decode().replace("\r", "").replace(" ", "")
-    lines = output.split("\n")
-    for line in lines:
-        status = line[:1]
-        name = line[1:]
-        # ret.append({'status': line[:1], 'name': line[1:]})
-        if status == "?":
-            status = "M"
-        ret[name] = status
-    return ret
-
-
 def rpc_get_file_list(xlsxpath):
+    print("rpc_GetFileList")
     file_list = []
     try:
         files_status = get_svn_status(xlsxpath)
@@ -116,6 +90,19 @@ def get_tpsvngui():
     return os.path.join(ROOT_DIR, "asset", "tpsvn", "TortoiseProc.exe")
     # return "C:\\Program Files\\TortoiseSVN\\bin\\TortoiseProc.exe"
 
+def get_svn_status(xlsxpath):
+    ret = {}
+    output = subprocess.check_output([get_tpsvn(), "status", xlsxpath]).decode().replace("\r", "").replace(" ", "")
+    lines = output.split("\n")
+    for line in lines:
+        status = line[:1]
+        name = line[1:]
+        # ret.append({'status': line[:1], 'name': line[1:]})
+        if status == "?":
+            status = "M"
+        ret[name] = status
+    return ret
+
 
 def gen_cscode(xlsxpath:str):
     print('-------------------------------------------------gen_cscode')
@@ -134,26 +121,92 @@ def gen_cscode(xlsxpath:str):
 
         comments = ws[1]
 
-        fileds = []
-        template_filed = "\t\tpublic __FILED__ { get; private set; } // __COMMENT__\n"
+        #创建属性 和 自定义 Class
+        fileds          = []
+        filedNames      = {}
+        classes         = []
+        template_filed  = "\t\tpublic __FILED__; // __COMMENT__\n"
+        functionsEx.csharp_custom_class.clear()#清空
+        functionsEx.csharp_custom_enum.clear()
         for i in range(0, len(comments)):
-            header = Header(
-                _comment=ws[4][i].value,
-                _tags=ws[2][i].value,
-                _filed=ws[5][i].value,
-                _type=ws[1][i].value,
+
+            #[主类型1，主类型2，主属性名，第二层类型，第二层属性名,变量类型]
+           
+           #为空 跳过
+            if ws[1][i].value == None or ws[5][i].value == None : 
+                #print("关键值为空跳过",ws[1][i].value,ws[5][i].value)
+                continue;
+
+            results = functionsEx.analysis_Class(ws[1][i].value,ws[5][i].value)
+
+            _type = results[5]
+  
+            if results[0] == "enum" :
+               #枚举处理
+               #('enum', 'ESex', 'sex', '', '', 'ESex') 
+               args = utils_str.get_fun_args(ws[2][i].value,"EEnum")
+               #['男-man-1','女-woman-2']
+               #['humans-1','orc-2']
+
+               for arg in args :
+
+                    argsp = arg.split('-')
+                    attributes = argsp
+                    if len(argsp) == 3:
+                        attributes = argsp[1:3]
+
+                    functionsEx.add_custom_enum(results[1],attributes)
+
+            else:
+                #收集需要创建的 Class
+                if not (results[0] in functionsEx.csharp_types) : 
+                    functionsEx.add_custom_class(results[0],results[3],results[4],False)
+
+                elif not (results[1] in functionsEx.csharp_types) :      
+                    functionsEx.add_custom_class(results[1],results[3],results[4],True)   
+
+
+            header = functionsEx.Header(
+                _comment = ws[4][i].value,
+                _tags    = ws[2][i].value,
+                _filed   = results[2],#名字
+                _type    = _type,
             )
-            if header.Filed == 'None':
-                continue
+
+            #为空 跳过
+            # if header.Filed == 'None':
+            #     continue
+
+             #变量名字已经记录，无需在替换
+            if results[2] in filedNames.keys() : continue
+            filedNames[results[2]] = True    
+
             line = template_filed.replace("__FILED__", f"{header.FiledType} {header.Filed}")
             line = line.replace("__COMMENT__", f"{header.Comment}")
             fileds.append(line)
+ 
+        #生成自定义的class     
+        for item in functionsEx.csharp_custom_class.values() :
+            class_str = functionsEx.gen_custom_class(item)
+            print(class_str)
+            classes.append(class_str)
 
-        header_list = []
-        fileds_parser = []
-        template_filed = '\t\t\t__FILED__ = Get___TYPE__(cellStrs[__INDEX__], "");\n'
+        #生成自定义的enum
+        for item in functionsEx.csharp_custom_enum.values() :
+            enum_str = functionsEx.gen_custom_enum(item)
+            print(enum_str)
+            classes.append(enum_str)
+
+        ########## 解析部分    
+        header_list     = []
+        fileds_parser   = []
+        history         = {}#记录
+        template_filed  = '\t\t\t__FILED__ = Get___TYPE__(cellStrs[__INDEX__], "");\n'
+        template_enum   = '\t\t\t__FILED__ = Get_Enum<__T__>(cellStrs[__INDEX__]);\n'
+        c_col = 0#列
         for i in range(0, len(comments)):
-            header = Header(
+        #for start
+            header = functionsEx.Header(
                 _comment=ws[4][i].value,
                 _tags=ws[2][i].value,
                 _filed=ws[5][i].value,
@@ -162,12 +215,49 @@ def gen_cscode(xlsxpath:str):
             header_list.append(header)
             if not header.Filed:
                 return {"ok": False, "msg": f"[2]{i} is None"}
+
             if header.Filed == 'None':
                 continue
-            line = template_filed.replace("__FILED__", header.Filed)
-            line = line.replace("__TYPE__", header.FiledType)
-            line = line.replace("__INDEX__", f"{i}")
-            fileds_parser.append(line)
+
+            #[主类型1，主类型2，主属性名，第二层类型，第二层属性名,变量类型]
+            results = functionsEx.analysis_Class(ws[1][i].value,ws[5][i].value)
+            #results: ('List', 'DropItem', 'items1', 'string', 'name','List<DropItem>') 
+
+            line = ""
+            if results[0] == "enum" :
+                #('enum', 'ESex', 'sex', '', '', 'ESex')                 --枚举类型
+                line = template_enum.replace("__FILED__", header.Filed)
+                line = line.replace("__T__",results[1])
+                line = line.replace("__INDEX__", f"{c_col}")
+
+            elif results[0] in functionsEx.csharp_simpleBase : 
+                #简单类型    
+                line = template_filed.replace("__FILED__", header.Filed)
+                line = line.replace("__TYPE__", header.FiledType)
+                line = line.replace("__INDEX__", f"{c_col}")
+            else:
+                #给复杂类型 instance
+                if results[3] != "" :
+                    get_sub_val = 'Get___TYPE__(cellStrs[__INDEX__],"")'.replace("__TYPE__",results[3])
+                else:
+                    get_sub_val = 'Get___TYPE__(cellStrs[__INDEX__],"")'.replace("__TYPE__",results[1])
+
+                get_sub_val = get_sub_val.replace("__INDEX__",f"{c_col}")
+                line   = functionsEx.instance_custom_class(results,history,get_sub_val,c_col)
+
+            if line != "" :
+                fileds_parser.append(line)
+
+            c_col = c_col + 1
+        #for end    
+
+        #给复杂类型赋值
+        #history
+        add_parser = []
+        print(history)
+        exlines = functionsEx.set_custom_class(history)
+        for line in exlines:
+            add_parser.append(line)
 
         mark_pkey = []
         for e in header_list:
@@ -195,7 +285,10 @@ def gen_cscode(xlsxpath:str):
             dat = dat.replace("<TABNAME>", tab_name)
             dat = dat.replace("<TABPATH>", f'"{tab_name}.csv"')
             dat = dat.replace("//MARK_FILEDS", "".join(fileds))
+            dat = dat.replace("//MARK_CLASS_FILED", "".join(classes))
             dat = dat.replace("//MARK_PARSER", "".join(fileds_parser))
+            dat = dat.replace("//MARK_ADD_METHOD", "".join(add_parser))
+            
             for (k, t, n) in mark_pkey:
                 dat = dat.replace(f"//MARK_T_{k}", t)
                 dat = dat.replace(f"//MARK_N_{k}", n)
@@ -218,6 +311,7 @@ def gen_cscode(xlsxpath:str):
         print("Exception", err)
         traceback.print_exc()
         return {"ok": False, "msg": f"ERROR: {err}\n{traceback.format_exc()}"}
+
 
 
 def gen_mgrcode(xlsxpath:str):
@@ -285,7 +379,7 @@ def gen_tabfile(dat: dict):
         tab_fullpath = os.path.join(setting.table_dir, f"{tab_name}.csv")
         tab_headers = []
         for i in range(0, len(ws[1])):
-            header = Header(
+            header = functionsEx.Header(
                 _comment=ws[4][i].value,
                 _tags=ws[2][i].value,
                 _filed=ws[5][i].value,
@@ -311,16 +405,40 @@ def gen_tabfile(dat: dict):
                 if v.value != None:
                     valid_cols_indexs.append(i)            
 
+            #获取第二行的，扩展操作标记        
+            extend_closs = []        
+            for i, v in enumerate(ws[2]):
+                extend_closs.append(v.value)    
+                   
+
             # 从第4行开始遍历
             irows = ws.iter_rows(min_row=4)
+            taglist = {}
+            rowCout = 4
             for r in irows:
+
                 cols = [f"{cell.value}" for cell in r]
+
                 for j in range(len(cols)):
                     if cols[j] == "None":
                         cols[j] = ""  # tab_header[j].Default
+
                     if "PATH" in tab_headers[j].Tags:
                         cols[j] = cols[j].replace("\\", "/")
-                    cols[j] = cols[j].replace("\n", "")
+                        cols[j] = cols[j].replace("\n", "")
+
+                    if rowCout > 5 :     
+                        extend = extend_closs[j]
+                        if(extend != None):
+                           
+                            extend = extend.strip()#要剔除空格，请开启
+                            ok,msg = custom_handler.custom(rowCout,j,extend,taglist,cols[j])
+                            if ok :
+                                cols[j] = msg
+                            else:
+                                return {"ok": False, "msg": f"ERROR:{msg}\n{traceback.format_exc()}"}   
+
+                rowCout = rowCout + 1            
                 # c.writerow([cell.value for cell in r])
                 # for i in range(3, ws.max_row + 1):
                 #     cells = [e.value for e in ws[i]]
@@ -410,6 +528,7 @@ def checkfile(xlsxpath: str):
         return {"ok": False, "msg": f"{e}"}
 
     return {"ok": True, "msg": "【SUCCEED】通过通用性检查"}
+
 
 
 def rpc_OpenXlsxFileClick(dat):
