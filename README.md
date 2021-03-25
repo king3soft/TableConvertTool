@@ -1,18 +1,21 @@
 # TableConvertTool
 
-
 ## 简介
 
 机甲转表工具
 
 ## 主要功能
 
-1. 一键生成对应的脚本,Tab文件
+1. 一键生成对应的脚本,Tab 文件
+
+## 开发计划
+
+![roadmap](docs/01.jpg)
 
 ## 开发环境
 
-* python 3.7, pip
-* node, yarn
+- python 3.7, pip
+- node, yarn
 
 Pull submodule:
 
@@ -44,6 +47,7 @@ Install Node requirements :
 ```
 
 Run:
+
 ```
 > python -m miniperf.app
 ```
@@ -59,5 +63,3 @@ Package:(Windows only)
 ## 学习文档
 
 https://react-bootstrap.github.io/components/buttons/
-
-
